@@ -6,7 +6,7 @@ let imports = [];
 class ImportAnalyzer extends Visitor {
   visitCallExpression(e) {
     let callee;
-    if (e.callee.type === 'MemberExpression' && e.callee.object.callee.value === 'import') {
+    if (e.callee.type === 'MemberExpression' && e.callee.object.callee?.value === 'import') {
       callee = e.callee.object;
     } else if (e.callee.type === 'Identifier' && e.callee.value === 'import' ) {
       callee = e;
@@ -71,11 +71,32 @@ const ast = swc.parseSync(
    import('foo').then(module => module.default);
    import(\`react-dom\`).then(module => module.default);
    import(\`bar-\${baz}\`).then(module => module.default);
+   import { action } from '@ember/object';
+   import { task } from 'ember-concurrency';
    let highchart = import('highcharts');
+
+   export default class MyComponent extends Component {
+     myProp = true;
+
+     @task
+     *waitAFewSeconds() {
+       this.set('status', "Gimme one second...");
+       yield timeout(1000);
+       this.set('status', "Gimme one more second...");
+       yield timeout(1000);
+       this.set('status', "OK, I'm done.");
+     }
+
+     @action
+     someAction() {
+       return this.args?.some;
+     }
+   }
 `, {
-    dynamicImport: true
+    dynamicImport: true,
+    decorators: true,
 });
-const out = swc.transformSync(
+swc.transformSync(
   ast,
   {
     plugin: m => new ImportAnalyzer().visitProgram(m)
