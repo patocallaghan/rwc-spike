@@ -1,14 +1,17 @@
-import swc from "@swc/core";
-import V from "@swc/core/Visitor.js";
+import swc from '@swc/core';
+import V from '@swc/core/Visitor.js';
 const Visitor = V.default;
 
 let imports = [];
 class ImportAnalyzer extends Visitor {
   visitCallExpression(e) {
     let callee;
-    if (e.callee.type === 'MemberExpression' && e.callee.object.callee?.value === 'import') {
+    if (
+      e.callee.type === 'MemberExpression' &&
+      e.callee.object.callee?.value === 'import'
+    ) {
       callee = e.callee.object;
-    } else if (e.callee.type === 'Identifier' && e.callee.value === 'import' ) {
+    } else if (e.callee.type === 'Identifier' && e.callee.value === 'import') {
       callee = e;
     }
     if (callee) {
@@ -32,13 +35,19 @@ class ImportAnalyzer extends Visitor {
             });
           } else {
             imports.push({
-              cookedQuasis: expression.quasis.map(templateElement => templateElement.cooked.value),
-              expressionNameHints: [...expression.expressions].map(inferNameHint),
+              cookedQuasis: expression.quasis.map(
+                (templateElement) => templateElement.cooked.value,
+              ),
+              expressionNameHints: [...expression.expressions].map(
+                inferNameHint,
+              ),
             });
           }
           break;
         default:
-          throw new Error('import() is only allowed to contain string literals or template string literals');
+          throw new Error(
+            'import() is only allowed to contain string literals or template string literals',
+          );
       }
     }
     return e;
@@ -92,16 +101,15 @@ const ast = swc.parseSync(
        return this.args?.some;
      }
    }
-`, {
+`,
+  {
     dynamicImport: true,
     decorators: true,
-});
-swc.transformSync(
-  ast,
-  {
-    plugin: m => new ImportAnalyzer().visitProgram(m)
-  }
+  },
 );
+swc.transformSync(ast, {
+  plugin: (m) => new ImportAnalyzer().visitProgram(m),
+});
 
 function inferNameHint(exp) {
   if (exp.type === 'Identifier') {
